@@ -12,6 +12,6 @@ if __name__ == '__main__':
     if args.mode == 'check':
         models.check()
     elif args.mode == 'daemon':
-        models.deamon()
+        models.daemon()
     elif args.mode == 'stats':
         models.stats()

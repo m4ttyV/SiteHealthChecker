@@ -27,10 +27,8 @@ class Logger:
             file.write(f"{log_text}\n")
         print(log_text.strip())
 
-class ErrorLogger(Logger):
-    def log_error(self, message):
-        self.log(message, level='ERROR')
+    def info(self, message):
+        self.log(message, 'INFO')
 
-class InfoLogger(Logger):
-    def log_info(self, message):
-        self.log(message, level='INFO')
+    def error(self, message):
+        self.log(message, 'ERROR')

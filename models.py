@@ -1,44 +1,51 @@
+from asyncio import as_completed
+
 from database import Database
-from logger import ErrorLogger, InfoLogger
+from logger import Logger
 from monitor import Monitor, Response
 from datetime import datetime
 import yaml
 import time
 import atexit
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def read_config():
     with open('config.yaml', 'r') as config_file:
         sites = yaml.safe_load(config_file)
     return sites
 
-def check():
-    info_logger = InfoLogger()
-    error_logger = ErrorLogger()
-    monitor = Monitor()
+def check(isDaemon: bool = False):
+    logger = Logger()
     db = Database()
+    if isDaemon:
+        logger.info("Healthcheck daemon started")
+    else: logger.info("Healthcheck started")
 
-    info_logger.log_info("Healthcheck started")
     sites = read_config()
     try:
-        for site in sites['sites']:
-            site = site.strip()
-            response = monitor.health_check(site)
-            status = "OK" if response.status_code == 200 else "ERROR"
-            if status == "OK":
-                info_logger.log_info(response.status_code)
-            else:
-                error_logger.log_error(response.status_code)
+        with ThreadPoolExecutor(max_workers=10) as executor:
 
-            db.add_to_db(
-                site,
-                status,
-                response.status_code,
-                response.response_time_ms,
-                datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            )
+            futures = [executor.submit(process_site, site) for site in sites['sites']]
+            for future in as_completed(futures):
+                result = future.result()
+                if result["status"] == "OK":
+                    logger.info(result["status_code"])
+                else:
+                    logger.error(result["status_code"])
+
+                db.add_to_db(
+                    result["site"],
+                    result["status"],
+                    result["status_code"],
+                    result["response_time_ms"],
+                    datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                )
+
     finally:
-        info_logger.log_info("Healthcheck ended")
+        if isDaemon:
+            logger.info("Healthcheck iteration ended")
+        else: logger.info("Healthcheck ended")
 
 def process_site(site: str):
     monitor = Monitor()
@@ -54,32 +61,17 @@ def process_site(site: str):
     }
 
 
-def deamon():
-    info_logger = InfoLogger()
-    error_logger = ErrorLogger()
-    monitor = Monitor()
-    db = Database()
+def daemon():
+    logger = Logger()
+
     try:
         while True:
-            info_logger.log_info("Healthcheck daemon started")
-            sites = read_config()
             try:
-                for site in sites['sites']:
-                    site = site.strip()
-                    response = monitor.health_check(site)
-                    if response.status_code == 200:
-                        info_logger.log_info(response.status_code)
-                        db.add_to_db(site, "OK", response.status_code, response.response_time_ms,
-                                     datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-                    else:
-                        error_logger.log_error(response.status_code)
-                        db.add_to_db(site, "ERROR", response.status_code, response.response_time_ms,
-                                     datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                check(True)
             finally:
-                info_logger.log_info("Healthcheck iteration ended")
                 time.sleep(30)
     finally:
-        info_logger.log_info("Healthcheck daemon ended")
+        logger.info("Healthcheck daemon ended")
 
 def stats():
     db = Database()
