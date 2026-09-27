@@ -81,15 +81,18 @@ def stats():
 
     for row in rows:
         print(f"""
-            {row['url']}
-            Всего проверок: {row['total_checks']}
-            Успешных: {row['success_checks']}
-            Неудачных: {row['failed_checks']}
-            Среднее время: {row['avg_response_ms']} ms
-            Последняя проверка: {row['last_check']}
-            """)
+        {row[0]}
 
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    with open("./stats.txt", "a") as file:
-        file.write(f"Stats was created by: {timestamp}\n")
-        file.write(f"{json.dumps(data, indent=4, ensure_ascii=False)}\n")
+        Всего проверок: {row[1]}
+        Успешных: {row[2]}
+        Неудачных: {row[3]}
+        Среднее время: {row[4]} ms
+        Последняя проверка: {row[5]}
+        """)
+    data = {
+        "generated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "summary": rows,
+        "checks": data
+    }
+    with open("./stats.json", "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)

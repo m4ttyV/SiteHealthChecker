@@ -45,8 +45,8 @@ class Database:
                 GROUP BY url;
             """
         )
+        rows = cursor.fetchall()
         conn.commit()
         conn.close()
-        rows = cursor.fetchall()
 
         return rows
