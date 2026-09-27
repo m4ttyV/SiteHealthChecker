@@ -27,3 +27,26 @@ class Database:
             cursor.execute("SELECT * FROM checks")
 
             return [dict(row) for row in cursor.fetchall()]
+
+    def check_count(self):
+        conn = sqlite3.connect(self.path)
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+                SELECT
+                    url,
+                    COUNT(*) AS total_checks,
+                    SUM(CASE WHEN status = 'OK' THEN 1 ELSE 0 END) AS success_checks,
+                    SUM(CASE WHEN status = 'ERROR' THEN 1 ELSE 0 END) AS failed_checks,
+                    ROUND(AVG(response_time_ms), 0) AS avg_response_ms,
+                    MAX(checked_at) AS last_check
+                FROM checks
+                GROUP BY url;
+            """
+        )
+        conn.commit()
+        conn.close()
+        rows = cursor.fetchall()
+
+        return rows
