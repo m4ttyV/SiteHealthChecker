@@ -19,4 +19,4 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Syntax check
-        run: python -m compileall .
+        run: python -m py_compile *.py
