@@ -1,7 +1,8 @@
 import sqlite3
 
+
 class Database:
-   def __init__(self):
+    def __init__(self):
         self.path = "./database.db"
         self.table = "checks"
         self._init_db()
