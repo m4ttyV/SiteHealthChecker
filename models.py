@@ -1,14 +1,13 @@
-from asyncio import as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+import json
+import time
+
+import yaml
 
 from database import Database
 from logger import Logger
-from monitor import Monitor, Response
-from datetime import datetime
-import yaml
-import time
-import atexit
-import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from monitor import Monitor
 
 def read_config():
     with open('config.yaml', 'r') as config_file:
