@@ -1,9 +1,25 @@
 import sqlite3
 
 class Database:
-    def __init__(self):
+   def __init__(self):
         self.path = "./database.db"
         self.table = "checks"
+        self._init_db()
+
+    def _init_db(self):
+        with sqlite3.connect(self.path) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS checks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    url TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    http_code INTEGER NOT NULL,
+                    response_time_ms INTEGER,
+                    checked_at TEXT
+                )
+                """
+            )
 
     def add_to_db(self, url, status, http_code, response_time_ms, checked_at):
         conn = sqlite3.connect(self.path)
