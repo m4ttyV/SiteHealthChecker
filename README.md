@@ -1,235 +1,55 @@
 # Site Health Checker
 
-Консольное приложение на Python для периодического мониторинга доступности сайтов.
+Python CLI application for monitoring website availability and response time.
 
-Программа получает список адресов из YAML-конфигурации, выполняет HTTP-запросы, измеряет время ответа и сохраняет результаты проверок в SQLite.
+The application reads a list of websites from a YAML configuration file, performs HTTP health checks concurrently, stores results in SQLite and generates aggregated monitoring statistics.
 
-## Возможности
+## Features
 
-* Проверка доступности сайтов по HTTP.
-* Измерение времени ответа.
-* Сохранение HTTP-кода ответа.
-* Сохранение результатов в SQLite.
-* Логирование успешных проверок и ошибок.
-* Получение истории проверок из базы данных.
-* Экспорт истории проверок в `stats.json`.
-* Режим непрерывного мониторинга.
-* Настройка списка сайтов через `config.yaml`.
+- HTTP availability monitoring
+- Response-time measurement
+- HTTP status code tracking
+- Concurrent website checks using `ThreadPoolExecutor`
+- SQLite history storage
+- Aggregated availability statistics
+- JSON statistics export
+- File-based logging
+- Continuous monitoring mode
+- YAML-based configuration
+- Configurable list of monitored websites
 
-## Структура проекта
+## Tech Stack
 
-```text
-SiteHealthChecker/
-├── main.py
-├── models.py
-├── monitor.py
-├── database.py
-├── logger.py
-├── config.yaml
-├── database.db
-├── stats.json
-└── logs/
-    └── logs.txt
-```
+| Technology | Purpose |
+|---|---|
+| Python | Main programming language |
+| Requests | HTTP health checks |
+| SQLite | Monitoring history |
+| PyYAML | Configuration |
+| ThreadPoolExecutor | Concurrent checks |
+| JSON | Statistics export |
 
-### main.py
-
-Точка входа в приложение.
-
-Поддерживает три режима работы:
+## How It Works
 
 ```text
-check
-daemon
-stats
+config.yaml
+    │
+    ▼
+List of websites
+    │
+    ▼
+ThreadPoolExecutor
+    │
+    ├── HTTP request
+    ├── HTTP status
+    └── Response time
+    │
+    ▼
+SQLite database
+    │
+    ├── History
+    └── Aggregated statistics
+            │
+            ▼
+        stats.json
 ```
-
-### monitor.py
-
-Отвечает за HTTP-проверку сайта.
-
-Для каждого запроса определяются:
-
-* HTTP-код ответа;
-* время выполнения запроса в миллисекундах.
-
-Таймаут запроса составляет 5 секунд.
-
-### database.py
-
-Работа с SQLite.
-
-Результаты проверок сохраняются в таблицу `checks`.
-
-### models.py
-
-Содержит основную логику приложения:
-
-* чтение конфигурации;
-* запуск проверок;
-* daemon-режим;
-* получение статистики.
-
-### logger.py
-
-Простая система логирования.
-
-Поддерживаются уровни:
-
-```text
-INFO
-ERROR
-```
-
-Логи сохраняются в:
-
-```text
-logs/logs.txt
-```
-
-## Требования
-
-* Python 3
-* requests
-* PyYAML
-
-Установка зависимостей:
-
-```bash
-pip install requests pyyaml
-```
-
-## Конфигурация
-
-Список проверяемых сайтов задаётся в файле `config.yaml`.
-
-Пример:
-
-```yaml
-sites:
-  - https://google.com
-  - https://github.com
-  - https://vk.ru
-  - https://stackoverflow.com
-```
-
-## Запуск
-
-### Однократная проверка
-
-```bash
-python main.py check
-```
-
-Программа последовательно проверит все сайты из `config.yaml` и сохранит результаты в базу данных.
-
-Пример вывода:
-
-```text
-INFO - [2026-08-27 16:00:00] Healthcheck started
-INFO - [2026-08-27 16:00:01] 200
-INFO - [2026-08-27 16:00:02] 200
-INFO - [2026-08-27 16:00:02] Healthcheck ended
-```
-
-### Непрерывный мониторинг
-
-```bash
-python main.py daemon
-```
-
-В этом режиме программа выполняет проверку всех сайтов каждые 30 секунд.
-
-Для остановки:
-
-```text
-Ctrl+C
-```
-
-При завершении daemon-режима информация об остановке записывается в лог.
-
-### Получение истории проверок
-
-```bash
-python main.py stats
-```
-
-Команда получает все сохранённые проверки из SQLite, выводит их в консоль и добавляет результат в:
-
-```text
-stats.txt
-```
-
-Данные записываются в JSON-формате с отступами для удобного чтения.
-
-## База данных
-
-Используется SQLite.
-
-Таблица:
-
-```sql
-checks
-```
-
-Структура:
-
-```sql
-CREATE TABLE checks (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    url TEXT NOT NULL,
-    status TEXT NOT NULL,
-    http_code INTEGER NOT NULL,
-    response_time_ms INTEGER,
-    checked_at TEXT
-);
-```
-
-Пример записи:
-
-```text
-id: 1
-url: https://google.com
-status: OK
-http_code: 200
-response_time_ms: 135
-checked_at: 2026-08-27 16:00:01
-```
-
-Статус `OK` устанавливается, если сервер вернул HTTP `200`.
-
-Для остальных HTTP-кодов используется статус `ERROR`.
-
-При ошибке HTTP-запроса текущая реализация сохраняет код `504`.
-
-## Логирование
-
-Пример успешной проверки:
-
-```text
-INFO - [2026-08-27 16:00:01] 200
-```
-
-Пример ошибки:
-
-```text
-ERROR - [2026-08-27 16:00:03] 504
-```
-
-## Текущее состояние
-
-Реализована базовая версия Site Health Checker:
-
-* [x] чтение сайтов из YAML;
-* [x] HTTP-проверка;
-* [x] измерение времени ответа;
-* [x] SQLite;
-* [x] логирование;
-* [x] CLI;
-* [x] daemon-режим;
-* [x] сохранение истории;
-* [x] агрегированная статистика;
-* [x] многопоточная проверка;
-* [ ] уведомления о недоступности.
-
-
